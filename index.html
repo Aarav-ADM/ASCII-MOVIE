@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ASCII Beach Rescue - 250 FPS</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #131417;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: clamp(8px, 2vw, 24px);
+    }
+
+    .player-card {
+      background-color: #1e2025;
+      border-radius: clamp(12px, 2vw, 18px);
+      overflow: hidden;
+      width: 100%;
+      max-width: 860px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.65);
+      border: 1px solid #2b2e36;
+    }
+
+    .viewport-wrapper {
+      background-color: #090a0d;
+      padding: clamp(10px, 2.5vw, 24px) clamp(10px, 3vw, 24px) clamp(16px, 3.5vw, 32px);
+      display: flex;
+      justify-content: center;
+    }
+
+    .crt-box {
+      background-color: #060807;
+      border: 1px solid #18221c;
+      border-radius: 10px;
+      padding: clamp(10px, 2vw, 20px) clamp(8px, 2.5vw, 24px);
+      width: 100%;
+      max-width: 720px;
+      box-shadow: inset 0 0 28px rgba(0, 0, 0, 0.9);
+      display: flex;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .ascii-canvas {
+      font-family: "Courier New", Courier, monospace;
+      font-size: clamp(7.6px, 2.15vw, 14.5px);
+      line-height: 1.25;
+      color: #22c55e;
+      text-shadow: 0 0 6px rgba(34, 197, 94, 0.35);
+      white-space: pre;
+      user-select: none;
+    }
+
+    .controls-panel {
+      background-color: #212329;
+      padding: clamp(14px, 2.5vw, 22px) clamp(14px, 3vw, 28px) clamp(18px, 3vw, 26px);
+      border-top: 1px solid #2d3039;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      text-align: center;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #2d3039;
+      margin-bottom: 16px;
+      gap: 10px;
+    }
+
+    .status-label {
+      font-size: clamp(10px, 1.8vw, 11px);
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .scene-value {
+      font-size: clamp(13px, 2.4vw, 15px);
+      font-weight: 600;
+      color: #3b82f6;
+    }
+
+    .speed-value {
+      font-size: clamp(13px, 2.4vw, 15px);
+      font-weight: 600;
+      color: #f3f4f6;
+    }
+
+    .sliders-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .sliders-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      color: #d1d5db;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #4b5563;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      touch-action: pan-y;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #4f86f7;
+      cursor: pointer;
+      box-shadow: 0 0 6px rgba(79, 134, 247, 0.6);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #4f86f7;
+      cursor: pointer;
+      border: none;
+    }
+
+    .button-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 11px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 42px;
+      transition: transform 0.1s, filter 0.15s;
+    }
+
+    .btn:hover {
+      filter: brightness(1.12);
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-secondary {
+      background-color: #2f323b;
+      color: #e5e7eb;
+    }
+
+    .btn-pause {
+      background-color: #ef4444;
+      color: #ffffff;
+      padding: 11px 26px;
+    }
+
+    .chapters-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding-top: 14px;
+      border-top: 1px solid #2d3039;
+    }
+
+    @media (max-width: 600px) {
+      .chapters-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .chapter-btn {
+      background-color: #292c34;
+      color: #9ca3af;
+      border: 1px solid #373b46;
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 38px;
+      transition: all 0.15s;
+    }
+
+    .chapter-btn:hover {
+      color: #f3f4f6;
+      background-color: #353944;
+    }
+
+    .chapter-btn.active {
+      background-color: #1d4ed8;
+      border-color: #3b82f6;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="player-card">
+    <div class="viewport-wrapper">
+      <div class="crt-box">
+        <div class="ascii-canvas" id="asciiScreen"></div>
+      </div>
+    </div>
+
+    <div class="controls-panel">
+      <div class="status-grid">
+        <div>
+          <div class="status-label">ACTIVE SCENE</div>
+          <div class="scene-value" id="sceneTitle">Act 1: Sunny Morning Beach</div>
+        </div>
+        <div>
+          <div class="status-label">PLAYBACK SPEED</div>
+          <div class="speed-value">250 FPS</div>
+        </div>
+      </div>
+
+      <div class="sliders-grid">
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>Timeline Scrubber</span>
+          </div>
+          <input type="range" id="timelineSlider" min="0" max="180" step="0.01" value="0">
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>Playback Frame Rate</span>
+            <span>250 FPS</span>
+          </div>
+          <input type="range" id="fpsSlider" min="250" max="250" value="250">
+        </div>
+      </div>
+
+      <div class="button-row">
+        <button class="btn btn-secondary" id="stepBackBtn">|&lt; Step Back</button>
+        <button class="btn btn-pause" id="playPauseBtn">|| Pause</button>
+        <button class="btn btn-secondary" id="stepFwdBtn">Step Forward &gt;|</button>
+      </div>
+
+      <div class="chapters-row" id="chaptersContainer"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+const TOTAL_SECONDS = 180;
+const COLS = 66;
+const ROWS = 16;
+const TARGET_FPS = 250;
+
+const CHAPTERS = [
+  { label: "Act 1: Morning Beach", time: 0 },
+  { label: "Act 2: Swimmers Drifting", time: 30 },
+  { label: "Act 3: Sudden Shark Attack!", time: 65 },
+  { label: "Act 4: Lifeguard Rescue", time: 100 },
+  { label: "Act 5: Shore Party \(\o\)/", time: 135 },
+  { label: "Act 6: Night & The End", time: 160 }
+];
+
+let currentTime = 0;
+let isPlaying = true;
+let lastTimestamp = performance.now();
+let accumulator = 0;
+
+const screenEl = document.getElementById("asciiScreen");
+const sceneTitleEl = document.getElementById("sceneTitle");
+const timelineSlider = document.getElementById("timelineSlider");
+const playPauseBtn = document.getElementById("playPauseBtn");
+const chaptersContainer = document.getElementById("chaptersContainer");
+
+CHAPTERS.forEach((chap) => {
+  const btn = document.createElement("button");
+  btn.className = "chapter-btn";
+  btn.textContent = chap.label;
+  btn.onclick = () => {
+    currentTime = chap.time;
+    renderFrame(currentTime);
+  };
+  chaptersContainer.appendChild(btn);
+});
+
+function formatTime(sec) {
+  const clamped = Math.max(0, Math.ceil(sec));
+  const m = Math.floor(clamped / 60);
+  const s = (clamped % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
+}
+
+function put(grid, r, c, text) {
+  if (r < 0 || r >= ROWS) return;
+  const colStart = Math.floor(c);
+  for (let i = 0; i < text.length; i++) {
+    const targetCol = colStart + i;
+    if (targetCol >= 0 && targetCol < COLS) {
+      grid[r][targetCol] = text[i];
+    }
+  }
+}
+
+function updateSliderFill(slider) {
+  const min = parseFloat(slider.min);
+  const max = parseFloat(slider.max);
+  const val = parseFloat(slider.value);
+  const pct = max === min ? 100 : ((val - min) / (max - min)) * 100;
+  slider.style.background = `linear-gradient(to right, #4f86f7 0%, #4f86f7 ${pct}%, #4b5563 ${pct}%, #4b5563 100%)`;
+}
+
+function renderFrame(t) {
+  const grid = Array.from({ length: ROWS }, () => Array(COLS).fill(" "));
+
+  if (t >= 172) {
+    sceneTitleEl.textContent = "Credits: The End";
+    put(grid, 3, 16, "==================================");
+    put(grid, 5, 29, "THE END");
+    put(grid, 7, 16, "==================================");
+    const hop = Math.floor(Math.sin(t * 6) + 1);
+    put(grid, 10 - hop, 20, "\(\o/       >-<o       \o\)/");
+    put(grid, 11 - hop, 20, " ||       ~~~~        || ");
+    put(grid, 12 - hop, 20, "/  \\                 /  \\");
+  } else {
+    if (t < 155) {
+      const sunX = 28 + Math.sin(t * 0.04) * 14;
+      put(grid, 1, sunX, "  \\ | /  ");
+      put(grid, 2, sunX, "--(SUN)--");
+      put(grid, 3, sunX, "  / | \\  ");
+
+      const birdX = (t * 7) % (COLS - 6);
+      const flap = Math.floor(t * 5) % 2 === 0 ? "v" : "^";
+      put(grid, 2, birdX, `${flap} ${flap}`);
+    } else {
+      put(grid, 1, 50, "  (   ");
+      put(grid, 2, 50, "   )  ");
+      put(grid, 2, 24, "*    .      *");
+    }
+
+    put(grid, 4, 3, "[TOWER]");
+    put(grid, 5, 2, "|     |");
+    put(grid, 6, 2, "|  o  |");
+    put(grid, 7, 2, "|_/|\\_|\\o/");
+    put(grid, 8, 6, "/ \\ ||");
+    put(grid, 9, 9, "/  \\");
+
+    const waveTop = ["~", "~", "^", "~", "-", "-", "~", "^", "~", "-"];
+    const waveMid = ["=", "~", "~", "=", "=", "~", "~", "=", "-", "="];
+    for (let c = 16; c < COLS; c++) {
+      const idx1 = Math.floor(c + t * 9) % waveTop.length;
+      const idx2 = Math.floor(c + t * 7 + 3) % waveMid.length;
+      grid[8][c] = waveTop[idx1];
+      grid[9][c] = waveMid[idx2];
+    }
+
+    if (t < 30) {
+      sceneTitleEl.textContent = "Act 1: Sunny Morning Beach";
+      const stroll = 11 + Math.sin(t * 0.8) * 2;
+      put(grid, 7, stroll, "\\o/");
+      put(grid, 8, stroll, " ||");
+      put(grid, 9, stroll, "/  \\");
+    } else if (t < 65) {
+      sceneTitleEl.textContent = "Act 2: Swimmers Drifting Deep";
+      const s1 = 22 + Math.sin(t * 1.1) * 4;
+      const s2 = 38 + Math.cos(t * 0.9) * 5;
+      const s3 = 52 + Math.sin(t * 1.3) * 4;
+      put(grid, 8, s1, Math.floor(t * 3) % 2 === 0 ? "\\o/" : "|o|");
+      put(grid, 9, s2, Math.floor(t * 2.5) % 2 === 0 ? "_o/" : "\\o_");
+      put(grid, 8, s3, "d=]");
+    } else if (t < 100) {
+      sceneTitleEl.textContent = "Act 3: Sudden Shark Attack!";
+      const wavePose = Math.floor(t * 5) % 2 === 0 ? "\\o/" : "|o|";
+      const drownPose = Math.floor(t * 4) % 2 === 0 ? "_o_~d=]" : "|o| d=]";
+      const sharkX = 58 - ((t - 65) * 0.45);
+      put(grid, 8, 19, wavePose);
+      put(grid, 9, 26, wavePose);
+      put(grid, 8, 36, drownPose);
+      if (sharkX > 44) {
+        put(grid, 9, sharkX, "/|\\");
+      }
+    } else if (t < 135) {
+      sceneTitleEl.textContent = "Act 4: Lifeguard Rescue";
+      const p = (t - 100) / 35;
+      if (p < 0.5) {
+        const swimOut = 16 + p * 2 * 24;
+        put(grid, 8, swimOut, "==\\o_");
+        put(grid, 8, 42, Math.floor(t * 5) % 2 === 0 ? "\\o/" : "d=]");
+      } else {
+        const towBack = 40 - (p - 0.5) * 2 * 22;
+        put(grid, 8, towBack, "_o/=[d=] \\o/");
+      }
+    } else if (t < 155) {
+      sceneTitleEl.textContent = "Act 5: Shore Party \\o/";
+      const jump = Math.abs(Math.round(Math.sin(t * 6)));
+      const dancers =;
+      dancers.forEach((xPos, i) => {
+        const j = i % 2 === 0 ? jump : 1 - jump;
+        put(grid, 7 - j, xPos, "\\o/");
+        put(grid, 8 - j, xPos, " ||");
+        put(grid, 9 - j, xPos, j ? "<  >" : "/  \\");
+      });
+    } else {
+      sceneTitleEl.textContent = "Act 6: Night & Sleep";
+      const zStep = Math.floor(t * 2) % 3;
+      put(grid, 8, 18, ">-<o");
+      put(grid, 9, 17, "~~~~~~");
+      if (zStep >= 0) put(grid, 7, 22, "z");
+      if (zStep >= 1) put(grid, 6, 24, "z");
+      if (zStep >= 2) put(grid, 5, 26, "Z");
+    }
+
+    put(grid, 10, 2, "~~~~ ACTIVE SANDY SHORE BEACHFRONT ~~~~");
+  }
+
+  put(grid, 12, 0, "=".repeat(COLS));
+  const timeLeft = TOTAL_SECONDS - t;
+  const timerStr = `-${formatTime(timeLeft)}  +${formatTime(TOTAL_SECONDS)}`;
+  const timerCol = Math.floor((COLS - timerStr.length) / 2);
+  put(grid, 13, timerCol, timerStr);
+
+  screenEl.textContent = grid.map((row) => row.join("")).join("\n");
+
+  timelineSlider.value = t;
+  updateSliderFill(timelineSlider);
+
+  const btns = chaptersContainer.querySelectorAll(".chapter-btn");
+  CHAPTERS.forEach((chap, idx) => {
+    const nextTime = CHAPTERS[idx + 1] ? CHAPTERS[idx + 1].time : TOTAL_SECONDS + 1;
+    btns[idx].classList.toggle("active", t >= chap.time && t < nextTime);
+  });
+}
+
+function loop(now) {
+  const dt = (now - lastTimestamp) / 1000;
+  lastTimestamp = now;
+
+  if (isPlaying) {
+    accumulator += dt;
+    const frameStep = 1 / TARGET_FPS;
+    if (accumulator >= frameStep) {
+      currentTime += accumulator;
+      accumulator = 0;
+
+      if (currentTime >= TOTAL_SECONDS) {
+        currentTime = TOTAL_SECONDS;
+        isPlaying = false;
+        playPauseBtn.textContent = "▶ Play";
+      }
+      renderFrame(currentTime);
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+playPauseBtn.onclick = () => {
+  if (currentTime >= TOTAL_SECONDS) currentTime = 0;
+  isPlaying = !isPlaying;
+  playPauseBtn.textContent = isPlaying ? "|| Pause" : "▶ Play";
+  lastTimestamp = performance.now();
+};
+
+document.getElementById("stepBackBtn").onclick = () => {
+  currentTime = Math.max(0, currentTime - 1);
+  renderFrame(currentTime);
+};
+
+document.getElementById("stepFwdBtn").onclick = () => {
+  currentTime = Math.min(TOTAL_SECONDS, currentTime + 1);
+  renderFrame(currentTime);
+};
+
+timelineSlider.oninput = (e) => {
+  currentTime = parseFloat(e.target.value);
+  renderFrame(currentTime);
+};
+
+updateSliderFill(document.getElementById("fpsSlider"));
+
+renderFrame(0);
+requestAnimationFrame(loop);
